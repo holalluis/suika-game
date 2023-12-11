@@ -1,0 +1,281 @@
+<html><head>
+  <meta charset=utf8>
+  <meta name=viewport content="width=device-width, initial-scale=1">
+  <style>
+    body{
+      margin:0;
+      background:#aaa;
+    }
+  </style>
+</head><body><canvas></canvas>
+
+<script>
+  /*finestra*/
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+
+  /*canvas*/
+  let canvas=document.querySelector('canvas');
+  canvas.width  = w;
+  canvas.height = h;
+  let c = canvas.getContext('2d');
+
+  /*JOC*/
+  const ALÇADA         =    200; //px
+  const FONTSIZE       =     30; //px
+  const FREGAMENT      =   0.98;
+  const GRAVETAT       = 0.9807;
+  const MARGE          =    200; //px
+  const PERDUA_V_PARET =   0.44;
+  const PERDUA_V_XOC   =   0.15;
+  const SIN45          = Math.sin(45*Math.PI/180);
+
+  c.font = `${FONTSIZE}px Monospace`;
+
+  let cursor = {x:0, y:ALÇADA};
+  let punts = 0;
+
+  //tipus de fruites
+  let tipus=[
+    {radi:16*Math.pow(4/3, 0), color:"red"        , nom:"cirera"       },
+    {radi:16*Math.pow(4/3, 1), color:"fuchsia"    , nom:"maduixa"      },
+    {radi:16*Math.pow(4/3, 2), color:"purple"     , nom:"mora"         },
+    {radi:16*Math.pow(4/3, 3), color:"orange"     , nom:"taronja"      },
+    {radi:16*Math.pow(4/3, 4), color:"#e2583e"    , nom:"pomelo"       },
+    {radi:16*Math.pow(4/3, 5), color:"#bf1932"    , nom:"vermell gros" },
+    {radi:16*Math.pow(4/3, 6), color:"pink"       , nom:"rosa gros"    },
+    {radi:16*Math.pow(4/3, 7), color:"#decdbe"    , nom:"blanc gros"   },
+    {radi:16*Math.pow(4/3, 8), color:"yellow"     , nom:"pinya"        },
+    {radi:16*Math.pow(4/3, 9), color:"green"      , nom:"sindria"      },
+    {radi:16*Math.pow(4/3,10), color:"lightgreen" , nom:"melo"         },
+  ];
+
+  let fruites          = []; //fruites tirades
+  let fruites_eliminar = new Set(); //fruites a eliminar després de cada frame
+  let next             = Math.floor(5*Math.random()); //numero de 0 a 4; següent fruita
+  let next_next        = Math.floor(5*Math.random()); //numero de 0 a 4; següent fruita
+
+  class Fruita{
+    constructor(x,radi){
+      this.x  = x||w/2; //posició
+      this.y  = ALÇADA; //posició
+      this.vx = 0.1*Math.random()-0.05; //velocitat
+      this.vy=0; //velocitat
+
+      //tipus de fruita determina: color radi nom
+      this.tipus = next;
+      this.color = tipus[next].color;
+      this.radi  = tipus[next].radi;
+      this.nom   = tipus[next].nom;
+      console.log(this.nom);
+    }
+
+    dibuixa(){
+      //dibuixa cercle
+      c.beginPath();
+      c.arc(this.x,this.y,this.radi,0,2*Math.PI);
+
+      //color contorn
+      c.lineWidth=1;
+      c.strokeStyle="black";
+      c.stroke();
+
+      //color interior
+      c.fillStyle=this.color;
+      c.fill();
+      c.closePath();
+    }
+
+    update(){
+      let RADI = this.radi;
+      let toca_terra = false;
+      //check límits
+      if(this.x<RADI+MARGE){
+        this.x   = RADI+MARGE;
+        this.vx *= -PERDUA_V_PARET;
+      }
+      if(this.x>w-RADI-MARGE){
+        this.x   = canvas.width-RADI-MARGE;
+        this.vx *= -PERDUA_V_PARET;
+      }
+      if(this.y<RADI+MARGE){
+        this.y   = RADI+MARGE;
+        this.vy *= -PERDUA_V_PARET;
+      }
+      if(this.y>h-RADI-MARGE){
+        toca_terra = true;
+        this.y   = canvas.height-RADI-MARGE;
+        this.vy *= -PERDUA_V_PARET;
+      }
+
+      //colisions amb fruites
+      fruites.forEach(f=>this.colisiona(f));
+
+      //gravetat i fregament
+      this.vy += GRAVETAT;
+      if(toca_terra){
+        this.vx *= FREGAMENT;
+      }
+
+      //mou
+      this.x += this.vx;
+      this.y += this.vy;
+
+      this.dibuixa();
+    }
+
+    colisiona(fruita){
+      if(this==fruita) return false;
+      let f = fruita;
+      let x = this.x;
+      let y = this.y;
+
+      let dx = f.x-x;
+      let dy = f.y-y;
+      let r = Math.sqrt(dx*dx+dy*dy); //distància
+
+      if(r<=(this.radi+f.radi)){
+        //fusiona
+        if(this.tipus == f.tipus){
+          let n      = this.tipus+1;
+          let r      = this.radi;
+          this.tipus = n;
+          this.radi  = tipus[n].radi;
+          this.color = tipus[n].color;
+
+          punts += Math.floor(r);
+
+          this.vx *= r/this.radi;
+          this.vy *= r/this.radi;
+
+          fruites_eliminar.add(f);
+          fruites_eliminar.delete(this);
+        }
+
+        let v1 = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+        let p1 = this.radi*v1;
+
+        let v2 = Math.sqrt(f.vx*f.vx + f.vy*f.vy);
+        let p2 = f.radi*v2;
+
+        //quantitat de moviment total
+        let p = PERDUA_V_XOC*(p1+p2);
+
+        //vector direcció
+        let ux = dx/r;
+        let uy = dy/r;
+
+        //seteja nova velocitat
+        this.vx -= p*ux/this.radi
+        this.vy -= p*uy/this.radi;
+      }
+    }
+  }
+
+  //mouse click
+  canvas.addEventListener("mousedown",function(event){
+    let bounding = canvas.getBoundingClientRect();
+    let x = event.clientX - bounding.left;
+    //let y = event.clientY - bounding.top;
+    fruites.push(new Fruita(x));
+    next      = next_next;
+    next_next = Math.floor(5*Math.random());
+  });
+
+  //mousemove
+  canvas.addEventListener("mousemove",function(event){
+    let bounding = canvas.getBoundingClientRect();
+    let x = event.clientX - bounding.left;
+    let y = event.clientY - bounding.top;
+    cursor.x = x;
+  });
+
+
+  //render
+  (function animate(){
+    requestAnimationFrame(animate);
+    c.clearRect(0,0,canvas.width,canvas.height);
+
+    //dibuixa punts
+    c.fillStyle="black";
+    c.fillText(`punts:${punts}`, 2, FONTSIZE);
+
+    //dibuixa línia blanca vertical objectiu
+    c.beginPath();
+    c.lineWidth=1;
+    c.strokeStyle="white";
+    c.moveTo(cursor.x, ALÇADA);
+    c.lineTo(cursor.x, h-MARGE);
+    c.stroke();
+    c.closePath();
+
+    //dibuixa les 2 nexts fruita
+    [next, next_next].forEach((n,i)=>{
+      let f = tipus[n];
+
+      c.beginPath();
+      c.fillStyle = f.color;
+      c.strokeStyle="black";
+      let x = Math.min(w-MARGE,Math.max(MARGE,cursor.x));
+      let y = cursor.y;
+      
+      if(i){
+        let d1 = tipus[next].radi*SIN45;
+        let d2 =           f.radi*SIN45;
+
+        x -= d1+d2+5;
+        y -= d1+d2+5;
+      }
+
+      c.arc(x, y, f.radi, 0,2*Math.PI);
+
+      c.stroke();
+      c.fill();
+      c.closePath();
+    });
+
+    //dibuixa fruites
+    fruites.forEach(f=>f.update());
+
+    //fruites eliminar
+    fruites_eliminar.forEach(f=>{
+      let index = fruites.indexOf(f);
+      fruites.splice(index,1);
+    });
+    fruites_eliminar.clear();
+
+    //dibuixa llegenda
+    {
+      let yi = MARGE;
+      let divisor = 5;
+
+      tipus.forEach((t,i)=>{
+        yi += tipus[i].radi/divisor;
+        c.beginPath();
+        c.lineWidth=1;
+        c.fillStyle = t.color;
+        c.strokeStyle = "black";
+        c.arc(w-MARGE/2, yi, t.radi/divisor, 0,2*Math.PI);
+        c.stroke();
+        c.fill();
+        c.closePath();
+        yi += tipus[i].radi/divisor;
+      });
+    }
+
+    //text cursor
+    c.fillStyle="black";
+    c.fillText("següent:", cursor.x-200, cursor.y);
+
+    //dibuixa parets
+    c.beginPath();
+    c.lineWidth=3;
+    c.moveTo(MARGE,   ALÇADA);
+    c.lineTo(MARGE,   h-MARGE+2);
+    c.lineTo(w-MARGE, h-MARGE+2);
+    c.lineTo(w-MARGE, MARGE);
+    c.stroke();
+    c.closePath();
+
+  })();
+</script>
