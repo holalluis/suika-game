@@ -127,11 +127,12 @@
     }
 
     colisiona(fruita){
-      if(this==fruita) return false;
+      if(this==fruita) return;
       let f = fruita;
       let x = this.x;
       let y = this.y;
 
+      //distancia entre fruites
       let dx = f.x-x;
       let dy = f.y-y;
       let r = Math.sqrt(dx*dx+dy*dy); //distància
@@ -154,6 +155,8 @@
           fruites_eliminar.delete(this);
         }
 
+        //en els xocs, la quantitat de moviment es conserva
+        //suma les quantitats de moviment (p=m*v)
         let v1 = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
         let p1 = this.radi*v1;
 
@@ -166,10 +169,14 @@
         //vector direcció
         let ux = dx/r;
         let uy = dy/r;
+        let angle = Math.atan2(uy,ux);
+
+        let px = p*Math.cos(angle);
+        let py = p*Math.sin(angle);
 
         //seteja nova velocitat
-        this.vx -= p*ux/this.radi
-        this.vy -= p*uy/this.radi;
+        this.vx -= px/this.radi*FREGAMENT;
+        this.vy -= py/this.radi*FREGAMENT;
       }
     }
   }
