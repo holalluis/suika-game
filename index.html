@@ -158,25 +158,23 @@
         //en els xocs, la quantitat de moviment es conserva
         //suma les quantitats de moviment (p=m*v)
         let v1 = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+        let v2 = Math.sqrt(   f.vx*   f.vx +    f.vy*   f.vy);
         let p1 = this.radi*v1;
+        let p2 =    f.radi*v2;
+        let p  = PERDUA_V_XOC*(p1+p2); //quantitat de moviment total
 
-        let v2 = Math.sqrt(f.vx*f.vx + f.vy*f.vy);
-        let p2 = f.radi*v2;
+        //calcula angle del xoc
+        let angle = Math.atan2(dy,dx);
 
-        //quantitat de moviment total
-        let p = PERDUA_V_XOC*(p1+p2);
-
-        //vector direcció
-        let ux = dx/r;
-        let uy = dy/r;
-        let angle = Math.atan2(uy,ux);
-
+        //calcula components de la quantitat de moviment
         let px = p*Math.cos(angle);
         let py = p*Math.sin(angle);
 
         //seteja nova velocitat
         this.vx -= px/this.radi*FREGAMENT;
-        this.vy -= py/this.radi*FREGAMENT;
+        this.vy -= py/this.radi;
+        f.vx    += px/f.radi*FREGAMENT;
+        f.vy    += py/f.radi;
       }
     }
   }
