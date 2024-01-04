@@ -26,11 +26,11 @@
   const MARGE          =    200; //px
 
   //constants físiques
-  const DENSITAT       =    2; //resistència al moviment
+  const DENSITAT       =    1; //resistència al moviment
   const FREGAMENT      =   0.98;
   const GRAVETAT       = 0.9807;
   const PERDUA_V_PARET =   0.44;
-  const PERDUA_V_XOC   =   0.40;
+  const PERDUA_V_XOC   =   0.30;
   const SIN45          = Math.sin(45*Math.PI/180);
 
   /*canvas font*/
@@ -128,6 +128,14 @@
       this.vx += this.ax;
       this.vy += this.ay;
 
+      /*test prevent shaking
+      */
+      if(this.vx){
+        let t = 1;//threshold
+        if(this.vx<t && this.vx>-t) this.vx *= 0.2;
+        if(this.vy<t && this.vy>-t) this.vy *= 0.2;
+      }
+
       //update posició (x=x0+vt)
       this.x += this.vx;
       this.y += this.vy;
@@ -164,7 +172,7 @@
       let dy = f.y-y;
       let r  = Math.sqrt(dx*dx+dy*dy); //distància
 
-      if(r<=(this.radi+f.radi)){
+      if(r<(this.radi+f.radi)){
         //fusiona
         if(this.tipus == f.tipus){
           let n      = this.tipus+1;
@@ -207,6 +215,8 @@
 
         //calcula angle del xoc
         let angle = Math.atan2(dx,dy);
+
+        //let d_rel = r/(this.radi+f.radi);
 
         //calcula components
         let vx = v1*Math.cos(angle)*PERDUA_V_XOC;
@@ -260,6 +270,12 @@
     c.stroke();
     c.closePath();
 
+    /*dibuixa fruites*/
+    fruites.forEach(f=>f.reset_forces());
+    fruites.forEach(f=>f.update_forces());
+    fruites.forEach(f=>f.update_posicio());
+    fruites.forEach(f=>f.dibuixa());
+
     //dibuixa les 2 nexts fruites
     [next, next_next].forEach((n,i)=>{
       let f = tipus[n];
@@ -284,12 +300,6 @@
       c.fill();
       c.closePath();
     });
-
-    /*dibuixa fruites*/
-    fruites.forEach(f=>f.reset_forces());
-    fruites.forEach(f=>f.update_forces());
-    fruites.forEach(f=>f.update_posicio());
-    fruites.forEach(f=>f.dibuixa());
 
     //fruites eliminar
     fruites_eliminar.forEach(f=>{
