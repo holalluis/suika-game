@@ -212,8 +212,8 @@
         let vx = v1*Math.cos(angle)*PERDUA_V_XOC;
         let vy = v1*Math.sin(angle)*PERDUA_V_XOC;
 
-        this.vx = vx;
-        this.vy = vy;
+        this.vx = vx*PERDUA_V_PARET;
+        this.vy = vy*PERDUA_V_PARET;
 
         //força "normal" (contacte)
         let Nx = m1*GRAVETAT*Math.sin(angle);
