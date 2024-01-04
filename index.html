@@ -26,11 +26,11 @@
   const MARGE          =    200; //px
 
   //constants físiques
-  const DENSITAT       =    0.9; //resistència al moviment
+  const DENSITAT       =    2; //resistència al moviment
   const FREGAMENT      =   0.98;
   const GRAVETAT       = 0.9807;
   const PERDUA_V_PARET =   0.44;
-  const PERDUA_V_XOC   =   0.15;
+  const PERDUA_V_XOC   =   0.40;
   const SIN45          = Math.sin(45*Math.PI/180);
 
   /*canvas font*/
@@ -183,49 +183,43 @@
           fruites_eliminar.delete(this);
         }
 
-        //en els xocs, la quantitat de moviment total es conserva
+        //xoc elàstic: la quantitat de moviment es conserva
         //             l'energia es conserva
         let m1 = DENSITAT*this.radi;
         let m2 = DENSITAT*f.radi;
 
-        //massa total
-        let M = m1+m2;
+        //velocitats inicials
+        let u1 = this.velocitat;
+        let u2 =    f.velocitat;
 
-        //quantitat de moviment de cada partícula
-        let p1 = m1*this.velocitat;
-        let p2 = m2*   f.velocitat;
+        //u: velocitat inicial, v: velocitat final
+        //m1*u1  + m2*u2  = m1*v1  + m2*v2  <----- conservació quantitat de moviment
+        //m1*u1² + m2*u2² = m1*v1² + m2*v2² <----- conservació energia
+        //        u1 + v1 = u2 + v2
+        //             v2 = u1 + v1 - u2
+        //m1*u1  + m2*u2  = m1*v1 + m2*(u1 + v1 - u2)
+        //m1*u1  + m2*u2  = m1*v1 + m2*u1 + m2*v1 - m2*u2
+        //m1*u1  + m2*u2  = (m1+m2)*v1 +m2*u1 -m2*u2
 
-        //quantitat de moviment total
-        let P = (p1+p2)*PERDUA_V_XOC;
-
-        //quantitat de moviment absorbida
-        let ratio = m2/M;
-        let p     = P*ratio;
+        //(m1+m2)*v1 =  m1*u1 +m2*u2 -m2*u1 +m2*u2
+        //        v1 = (m1*u1 +m2*u2 -m2*u1 +m2*u2 )/(m1+m2)
+        let v1 = (+m1*u1 +m2*u2 -m2*u1 +m2*u2)/(m1+m2);
 
         //calcula angle del xoc
         let angle = Math.atan2(dx,dy);
 
         //calcula components
-        let px = p*Math.cos(angle);
-        let py = p*Math.sin(angle);
+        let vx = v1*Math.cos(angle)*PERDUA_V_XOC;
+        let vy = v1*Math.sin(angle)*PERDUA_V_XOC;
 
-        //suma forces; F = p/t
-        this.fx += px;
-        this.fy += py;
-        f.fx    -= px;
-        f.fy    -= py;
+        this.vx = vx;
+        this.vy = vy;
 
         //força "normal" (contacte)
-        let Nx = m1*GRAVETAT*Math.cos(angle)*PERDUA_V_PARET;
-        let Ny = m1*GRAVETAT*Math.sin(angle)*PERDUA_V_PARET;
-
+        let Nx = m1*GRAVETAT*Math.sin(angle);
+        let Ny = m1*GRAVETAT*Math.cos(angle);
         this.fx -= Nx;
         this.fy -= Ny;
-        f.fx    += Nx;
-        f.fy    += Ny;
-
-        this.vy *= -PERDUA_V_PARET;
-        this.vx *= FREGAMENT;
       }
     }
   }
