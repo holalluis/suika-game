@@ -32,6 +32,7 @@
   const PERDUA_V_PARET =   0.44;
   const PERDUA_V_XOC   =   0.30;
   const SIN45          = Math.sin(45*Math.PI/180);
+  const EINV           = 1/Math.E;
 
   /*canvas font*/
   c.font = `${FONTSIZE}px Monospace`;
@@ -132,8 +133,8 @@
       */
       if(this.vx){
         let t = 1;//threshold
-        if(this.vx<t && this.vx>-t) this.vx *= 0.2;
-        if(this.vy<t && this.vy>-t) this.vy *= 0.2;
+        if(this.vx<t && this.vx>-t) this.vx *= EINV;
+        if(this.vy<t && this.vy>-t) this.vy *= EINV;
       }
 
       //update posició (x=x0+vt)
@@ -216,14 +217,23 @@
         //calcula angle del xoc
         let angle = Math.atan2(dx,dy);
 
-        //let d_rel = r/(this.radi+f.radi);
+        let perdua_v_xoc = 0.618;
+        let d_rel = r/(this.radi+f.radi);
+        if(d_rel<0.99){
+          perdua_v_xoc=1;
+        }
 
         //calcula components
-        let vx = v1*Math.cos(angle)*PERDUA_V_XOC;
-        let vy = v1*Math.sin(angle)*PERDUA_V_XOC;
+        let vx = v1*Math.cos(angle)*perdua_v_xoc;
+        let vy = v1*Math.sin(angle)*perdua_v_xoc;
 
-        this.vx = vx*PERDUA_V_PARET;
-        this.vy = vy*PERDUA_V_PARET;
+        let perdua_v_paret = 1;
+        if(d_rel>0.96){
+          perdua_v_paret = PERDUA_V_PARET
+        }
+
+        this.vx = vx*perdua_v_paret;
+        this.vy = vy*perdua_v_paret;
 
         //força "normal" (contacte)
         let Nx = m1*GRAVETAT*Math.sin(angle);
